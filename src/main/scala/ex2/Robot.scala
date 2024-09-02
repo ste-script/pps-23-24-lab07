@@ -69,6 +69,13 @@ class RobotCanFail(val robot: Robot) extends Robot:
         if Random.nextInt(100) <= failProbabiliy then return
         else robot.act()
 
+class RobotRepeated(val robot: Robot) extends Robot:
+  export robot.{position, direction, turn}
+  override def act(): Unit = return
+
+  def act(repeat: Int): Unit =
+    for _ <- 1 to repeat do robot.act()
+
 @main def testRobot(): Unit =
   val robot = LoggingRobot(SimpleRobot((0, 0), Direction.North))
   robot.act() // robot at (0, 1) facing North
