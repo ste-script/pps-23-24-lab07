@@ -1,8 +1,11 @@
 package ex3
 
+import scala.collection.immutable.ArraySeq
+
 object Solitaire extends App:
-  def render(solution: Seq[(Int, Int)], width: Int, height: Int): String =
-    val reversed = solution.reverse
+  type Position = (Int, Int)
+  def render(solution: Iterable[Position], width: Int, height: Int): String =
+    val reversed = solution.toSeq.reverse
     val rows =
       for
         y <- 0 until height
@@ -13,27 +16,55 @@ object Solitaire extends App:
       yield row.mkString
     rows.mkString("\n")
 
-  // println(render(solution = Seq((0, 0), (2, 1)), width = 3, height = 3))
+  def init(x: Int, y: Int): Iterable[Position] = Seq((x / 2, y / 2))
 
-  def apply(size: Int): Unit =
-    val board = new Board(size)
-    board.init()
-    board.right()
-    board.up()
-    board.left()
-    board.render()
+  def contains(position: Position, field: Iterable[Position]): Boolean =
+    field.toSeq.contains((position._1, position._2))
 
-  class Board(size: Int = 5):
-    private var field = Seq.empty[(Int, Int)]
-    def init(): Unit = field = (size / 2, size / 2) +: field
-    def render(): Unit =
-      println(Solitaire.render(field, size, size))
-    def add(x: Int, y: Int): Unit = field = (x, y) +: field
-    private def contains(x: Int, y: Int): Boolean = field.contains((x, y))
-    def right(): Unit = field = (field.head._1 + 2, field.head._2) +: field
-    def left(): Unit = field = (field.head._1 - 2, field.head._2) +: field
-    def up(): Unit = field = (field.head._1, field.head._2 - 2) +: field
-    def down(): Unit = field = (field.head._1, field.head._2 + 2) +: field
-    def isValid(x: Int, y: Int): Boolean =
-      !this.contains(x, y) && x < size && y < size && x > 0 && y > 0
+  def isValid(
+      col: Int,
+      row: Int,
+      pos: Position,
+      field: Iterable[Position]
+  ): Boolean =
+    val x = pos._1
+    val y = pos._2
+    !contains(pos, field) &&
+    x >= 0 && y >= 0 && x < col && y < row
 
+  def renderAll(solutions: Iterable[Iterable[Position]]): Unit =
+    solutions.foreach(s => println(render(s, 7, 5) + "\n\n"))
+    println(solutions.size)
+    println(solutions.getClass)
+    println(solutions.head.getClass)
+
+  def getAttempt(pos: Position): Iterable[Position] =
+    val x = pos._1
+    val y = pos._2
+    List(
+      (x + 3, y),
+      (x - 3, y),
+      (x, y + 3),
+      (x, y - 3),
+      (x + 2, y + 2),
+      (x + 2, y - 2),
+      (x - 2, y - 2),
+      (x - 2, y + 2)
+    )
+
+  def placeMarks(
+      columns: Int,
+      rows: Int,
+      field: Iterable[Position],
+      remaining: Int = 34
+  ): Iterable[Iterable[Position]] =
+    remaining match
+      case 0 => Iterable(field)
+      case _ =>
+        for
+          solution <- placeMarks(columns, rows, field, remaining - 1)
+          pos <- getAttempt(solution.head)
+          if isValid(columns, rows, pos, solution)
+        yield pos +: solution.toSeq
+
+  renderAll(placeMarks(7, 5, init(7, 5)))
